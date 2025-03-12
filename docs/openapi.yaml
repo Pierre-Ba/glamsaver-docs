@@ -1,0 +1,31 @@
+openapi: 3.0.0
+info:
+  title: GlamSaver API
+  description: API documentation for the GlamSaver backend.
+  version: 1.0.0
+
+servers:
+  - url: https://api.glamsaver.com
+    description: Production Server
+  - url: http://localhost:8000
+    description: Local Development Server
+
+paths:
+  /users:
+    get:
+      summary: Get all users
+      description: Returns a list of all users.
+      responses:
+        "200":
+          description: A list of users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    email:
+                      type: string
