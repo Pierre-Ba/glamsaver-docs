@@ -10,24 +10,645 @@ servers:
   - url: http://localhost:8000
     description: Local Development Server
 
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+    StylePreference:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        style_categories:
+          type: array
+          items:
+            type: string
+        price_min:
+          type: number
+          format: float
+        price_max:
+          type: number
+          format: float
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Brand:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        logo_url:
+          type: string
+        website_url:
+          type: string
+        price_range:
+          type: string
+        category:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    BrandPreference:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        brand_id:
+          type: string
+          format: uuid
+        preference_level:
+          type: string
+          enum: [love, like, dislike]
+        created_at:
+          type: string
+          format: date-time
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        brand_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        image_url:
+          type: string
+        product_url:
+          type: string
+        current_price:
+          type: number
+          format: float
+        original_price:
+          type: number
+          format: float
+        currency:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TrackedItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        item_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PriceRange:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tracked_item_id:
+          type: string
+          format: uuid
+        min_price:
+          type: number
+          format: float
+        max_price:
+          type: number
+          format: float
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PriceHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        item_id:
+          type: string
+          format: uuid
+        price:
+          type: number
+          format: float
+        currency:
+          type: string
+        recorded_at:
+          type: string
+          format: date-time
+    PriceAlert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        item_id:
+          type: string
+          format: uuid
+        price:
+          type: number
+          format: float
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
 paths:
-  /users:
-    get:
-      summary: Get all users
-      description: Returns a list of all users.
+  /auth/signup:
+    post:
+      summary: Register a new user
+      description: Create a new user account with email and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
       responses:
         "200":
-          description: A list of users.
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  session:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+        "400":
+          description: Invalid request
+
+  /auth/login:
+    post:
+      summary: Login a user
+      description: Log in a user with email and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                  session:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+        "400":
+          description: Invalid credentials
+
+  /user/preferences:
+    get:
+      summary: Get user style preferences
+      description: Get the current user's style preferences.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StylePreference"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Preferences not found
+    post:
+      summary: Create user style preferences
+      description: Create or update the current user's style preferences.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                style_categories:
+                  type: array
+                  items:
+                    type: string
+                price_min:
+                  type: number
+                  format: float
+                price_max:
+                  type: number
+                  format: float
+      responses:
+        "200":
+          description: User preferences created/updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StylePreference"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+
+  /brands:
+    get:
+      summary: Get all brands
+      description: Get a list of all available brands.
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: price_range
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of brands
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    email:
-                      type: string
-# Test update
+                  $ref: "#/components/schemas/Brand"
+
+  /user/brands:
+    get:
+      summary: Get user brand preferences
+      description: Get the current user's brand preferences.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User brand preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BrandPreference"
+        "401":
+          description: Unauthorized
+    post:
+      summary: Create user brand preference
+      description: Add a brand preference for the current user.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - brand_id
+                - preference_level
+              properties:
+                brand_id:
+                  type: string
+                  format: uuid
+                preference_level:
+                  type: string
+                  enum: [love, like, dislike]
+      responses:
+        "200":
+          description: Brand preference created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandPreference"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+
+  /items:
+    get:
+      summary: Get items
+      description: Get a list of fashion items with optional filtering.
+      parameters:
+        - name: brand_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: price_min
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: price_max
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+
+  /items/{item_id}:
+    get:
+      summary: Get item details
+      description: Get details for a specific item.
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Item details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "404":
+          description: Item not found
+
+  /user/tracked-items:
+    get:
+      summary: Get user tracked items
+      description: Get the current user's tracked items.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User tracked items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrackedItem"
+        "401":
+          description: Unauthorized
+    post:
+      summary: Track a new item
+      description: Add an item to the user's tracked items.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_id
+              properties:
+                item_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Item tracked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackedItem"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+
+  /user/tracked-items/{tracked_item_id}:
+    delete:
+      summary: Stop tracking an item
+      description: Remove an item from the user's tracked items.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tracked_item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Item tracking removed successfully
+        "401":
+          description: Unauthorized
+        "404":
+          description: Tracked item not found
+
+  /user/tracked-items/{tracked_item_id}/price-range:
+    post:
+      summary: Set price range for tracked item
+      description: Set a target price range for a tracked item.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tracked_item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - min_price
+                - max_price
+              properties:
+                min_price:
+                  type: number
+                  format: float
+                max_price:
+                  type: number
+                  format: float
+                is_active:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Price range set successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceRange"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Tracked item not found
+
+  /items/{item_id}/price-history:
+    get:
+      summary: Get price history
+      description: Get the price history for a specific item.
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Price history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceHistory"
+        "404":
+          description: Item not found
+
+  /user/alerts:
+    get:
+      summary: Get user price alerts
+      description: Get the current user's price alerts.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: is_read
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: User alerts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceAlert"
+        "401":
+          description: Unauthorized
+
+  /user/alerts/{alert_id}/mark-read:
+    post:
+      summary: Mark alert as read
+      description: Mark a price alert as read.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Alert marked as read
+        "401":
+          description: Unauthorized
+        "404":
+          description: Alert not found
 
